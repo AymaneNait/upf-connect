@@ -1022,69 +1022,8 @@ async function markMessagesAsRead(senderId) {
   }
 }
     let unreadCounts = {};
-    const students = [
-      {
-        id: 1,
-        name: "Othman Harcha",
-        email:"Othman@upf.ma",
-        filiere: "Transformation Digital",
-        year: "3e année",
-        bio: "Passionné par le développement web, l’architecture logicielle et les projets collaboratifs.",
-        skills: ["HTML", "CSS", "JavaScript", "MySQL"],
-        activity: ["A partagé 2 épreuves", "A rejoint 1 groupe", "A consulté plusieurs cours"],
-        joinedGroups: [1],
-        sharedExams: [1, 2],
-        avatar: "",
-        privateMessages: [
-          { from: "Salma El Fassi", text: "Tu peux m’envoyer les slides de réseaux ?" }
-        ]
-      },
-      {
-        id: 2,
-        name: "Aymane Nait Ougourram",
-        email:"Aymane@upf.ma",
-        filiere: "CPII A2",
-        year: "2re année",
-        bio: "Intéressée par la sécurité réseau, les environnements Linux et la sensibilisation.",
-        skills: ["Linux", "Réseaux", "Analyse de risques"],
-        activity: ["A rejoint le groupe Révision Réseaux", "A signalé 1 épreuve"],
-        joinedGroups: [2],
-        sharedExams: [],
-        avatar: "",
-        privateMessages: []
-      },
-      {
-        id: 3,
-        name: "Olaya Badad",
-        email:"Olaya@upf.ma",
-        filiere: "SITD",
-        year: "3e année",
-        bio: "J’aime transformer les données en outils concrets et utiles.",
-        skills: ["Python", "SQL", "Power BI"],
-        activity: ["A partagé 1 épreuve", "A rejoint 1 groupe"],
-        joinedGroups: [3],
-        sharedExams: [3],
-        avatar: "",
-        privateMessages: [
-          { from: "Yassine Ait Lahcen", text: "Le dashboard du hackathon est clean." }
-        ]
-      },
-       {
-        id: 4,
-        name: "Jihane Lahmimi",
-        email:"Jihane@upf.ma",
-        filiere: "CPII A2",
-        year: "2e année",
-        bio: "J’aime CyberSecurite en outils concrets et utiles.",
-        skills: ["Python", "SQL", "Power BI"],
-        activity: ["A partagé 1 épreuve", "A rejoint 1 groupe"],
-        joinedGroups: [3],
-        sharedExams: [3],
-        avatar: "",
-        privateMessages: [
-          { from: "Yassine Ait Lahcen", text: "Le dashboard du hackathon est clean." }
-        ]
-      }
+    let students = [
+    
     ];
 
     let courses = [];
@@ -1127,10 +1066,10 @@ async function fetchCourses() {
     console.error("Error fetching exams:", err);
   }
 }
-   const groups = [
+   let groups = [
   {
     id: 1,
-    name: "Dev Team",
+    name: "Dev Team✨",
     type: "public",
     topic: "Coding & Projects",
     members: [1, 2],
@@ -1195,30 +1134,52 @@ async function fetchCourses() {
   document.getElementById("statGroups").textContent = groups.length;
   document.getElementById("statMessages").textContent = user ? user.privateMessages.length : 0;
 }
-  async function createGroup() {
+ 
+
+ 
+
+  
+async function createGroup() {
   const name = document.getElementById("groupName").value.trim();
   const type = document.getElementById("groupType").value;
   const topic = document.getElementById("groupTopic").value.trim();
 
-  if (!name) return;
+  if (!name) {
+    notify("Erreur", "Veuillez entrer un nom de groupe.", "danger");
+    return;
+  }
 
-  const res = await fetch("http://localhost/upf-connect/api/createGroup.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      type,
-      topic,
-      user_id: state.currentUserId
-    })
-  });
+  try {
+    const res = await fetch("http://localhost/upf-connect/api/createGroup.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: name,
+        type: type,
+        topic: topic,
+        user_id: state.currentUserId
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
+    console.log("createGroup response:", data);
 
-  if (data.success) {
-    await fetchGroups(); 
-    renderGroupsModule();
-    notify("Succès", "Groupe créé", "success");
+    if (data.success) {
+      document.getElementById("groupName").value = "";
+      document.getElementById("groupTopic").value = "";
+      document.getElementById("groupType").value = "public";
+
+      await fetchGroups();
+      renderGroupsModule();
+      notify("Succès", "Groupe créé avec succès.", "success");
+    } else {
+      notify("Erreur", data.message || "Impossible de créer le groupe.", "danger");
+    }
+  } catch (err) {
+    console.error("createGroup error:", err);
+    notify("Erreur serveur", "Création impossible.", "danger");
   }
 }
 
@@ -1226,10 +1187,12 @@ async function fetchGroups() {
   try {
     const res = await fetch(`http://localhost/upf-connect/api/getGroups.php?user_id=${state.currentUserId || 0}`);
     const data = await res.json();
-    console.log("Groups API:", data);
+
+    
 
     if (data.success) {
       groups = data.groups;
+      console.log("Groups after fetch:", groups);
     } else {
       console.error("Failed to load groups:", data.message);
     }
@@ -1608,15 +1571,23 @@ async function toggleJoinGroup(groupId, joined) {
     if (data.success) {
       await fetchGroups();
       renderGroupsModule();
+
+      if (joined && Number(state.selectedGroupId) === Number(groupId)) {
+        state.selectedGroupId = null;
+        detailsBox.innerHTML = "";
+        detailsSection.classList.remove("active");
+      }
+
       notify("Succès", data.message || "Action effectuée.", "success");
     } else {
       notify("Erreur", data.message || "Impossible d'effectuer cette action.", "danger");
     }
-  } catch (err) {
-    console.error("toggleJoinGroup error:", err);
+  } catch (error) {
+    console.error("toggleJoinGroup error:", error);
     notify("Erreur serveur", "Action impossible.", "danger");
   }
 }
+  
 async function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input?.value.trim();
@@ -2597,8 +2568,7 @@ function renderGroupsModule() {
         <p>${group.topic || "Aucun sujet renseigné."}</p>
 
         <div class="actions">
-          <button class="btn btn-outline" onclick="showGroupDetails(${group.id})">Voir</button>
-
+          <button  class="btn btn-outline"onclick="console.log('clicked', ${group.id}); showGroupDetails(${group.id})">Voir</button>
           <button class="btn ${joined ? "btn-danger" : "btn-success"}" onclick="toggleJoinGroup(${group.id}, ${joined})">
   ${joined ? "Quitter" : "Rejoindre"}
 </button>
@@ -2612,60 +2582,27 @@ function renderGroupsModule() {
     `;
   }).join("");
 }
-    function createGroup() {
-      const name = document.getElementById("groupName").value.trim();
-      const type = document.getElementById("groupType").value;
-      const topic = document.getElementById("groupTopic").value.trim();
-
-      if (!name || !topic) {
-        notify("Informations manquantes", "Veuillez renseigner le nom et le sujet du groupe.", "danger");
-        return;
-      }
-
-      const newGroup = {
-        id: Date.now(),
-        name,
-        type,
-        topic,
-        members: [state.currentUserId],
-        messages: [
-          { user: currentUser().name, text: "Bienvenue dans le nouveau groupe." }
-        ]
-      };
-
-      groups.unshift(newGroup);
-      currentUser().joinedGroups.push(newGroup.id);
-      currentUser().activity.unshift(`A créé le groupe ${name}`);
-      renderGroupsModule();
-      updateCounts();
-      notify("Groupe créé", `${name} a été ajouté avec succès.`, "success");
-    }
-
+   
 
 
     function showGroupDetails(groupId) {
-      const group = groups.find(g => g.id === groupId);
-      const memberNames = group.members.map(id => students.find(s => s.id === id)?.name).filter(Boolean);
+  const group = groups.find(g => Number(g.id) === Number(groupId));
 
-      detailsBox.innerHTML = `
-        <h3>${group.name}</h3>
-        <p>${group.topic}</p>
-        <ul>
-          <li><strong>Type :</strong> ${group.type === "public" ? "Public" : "Privé"}</li>
-          <li><strong>Membres :</strong> ${group.members.length}</li>
-          <li><strong>Accès :</strong> ${group.type === "public" ? "Libre" : "Sur invitation"}</li>
-        </ul>
-        <div class="mini-list">
-          ${memberNames.map(name => `
-            <div class="mini-item">
-              <strong>Membre</strong>
-              <span class="chip">${name}</span>
-            </div>
-          `).join("")}
-        </div>
-      `;
-      detailsSection.classList.add("active");
-    }
+  if (!group) {
+    console.error("Group not found:", groupId);
+    notify("Erreur", "Groupe introuvable.", "danger");
+    return;
+  }
+
+  detailsBox.innerHTML = `
+    <h3>${group.name}</h3>
+    <p><strong>Type :</strong> ${group.type}</p>
+    <p><strong>Sujet :</strong> ${group.topic || "Aucun sujet"}</p>
+    <p><strong>Membres :</strong> ${group.members_count || 0}</p>
+  `;
+
+  detailsSection.classList.add("active");
+}
 
    function loadCurrentUser() {
   const user = JSON.parse(localStorage.getItem("upf_user"));
@@ -2731,8 +2668,17 @@ async function loadGroupMessages(groupId) {
 }
 async function openGroupChat(groupId) {
   const group = groups.find(g => Number(g.id) === Number(groupId));
+
   if (!group) {
     console.error("Group not found:", groupId, groups);
+    notify("Erreur", "Groupe introuvable.", "danger");
+    return;
+  }
+
+  const isMember = Number(group.joined) === 1;
+
+  if (!isMember) {
+    notify("Accès refusé", "Vous n’êtes pas dans ce groupe.", "danger");
     return;
   }
 
